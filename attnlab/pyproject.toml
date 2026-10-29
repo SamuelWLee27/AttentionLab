@@ -1,7 +1,9 @@
 [project]
 name = "attnlab"
 version = "0.1.0"
-description = "Add your description here"
+license = "MIT"
+license-files = ["LICENSE"]
+description = "Implementing attention layers for benchmarking"
 readme = "README.md"
 authors = [
     { name = "Samuel Lee", email = "137744681+SamuelWLee27@users.noreply.github.com" }

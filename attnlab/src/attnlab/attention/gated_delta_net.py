@@ -16,6 +16,9 @@ class GatedDeltaNetAttention(nn.Module):
         self.alpha_proj = nn.Linear(d_model, heads)
         self.out_proj = nn.Linear(d_model, d_model)
         self.silu = nn.SiLU()
+        self.dt_bias = nn.Parameter(torch.zeros(heads))
+        A = torch.empty(heads).uniform_(1, 16)
+        self.A_log = nn.Parameter(A.log())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, T, D = x.shape
@@ -23,7 +26,8 @@ class GatedDeltaNetAttention(nn.Module):
         K = self.k_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
         V = self.v_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
         beta = torch.sigmoid(self.beta_proj(x)).permute(0, 2, 1)
-        alpha = torch.sigmoid(self.alpha_proj(x)).permute(0, 2, 1)
+        g = -torch.exp(self.A_log) * nn.functional.softplus(self.alpha_proj(x) + self.dt_bias)
+        alpha = torch.exp(g).permute(0, 2, 1)
 
         phi_Q = self._phi(Q)
         phi_K = self._phi(K)
@@ -35,7 +39,7 @@ class GatedDeltaNetAttention(nn.Module):
 
     def _phi(self, x: torch.Tensor) -> torch.Tensor:
         x = self.silu(x)
-        return torch.nn.functional.normalize(x, dim=-1)
+        return nn.functional.normalize(x, dim=-1)
 
     def _recurrent(
         self,

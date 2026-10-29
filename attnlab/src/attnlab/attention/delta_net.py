@@ -33,7 +33,7 @@ class DeltaNetAttention(nn.Module):
 
     def _phi(self, x: torch.Tensor) -> torch.Tensor:
         x = self.silu(x)
-        return torch.nn.functional.normalize(x, dim=-1)
+        return nn.functional.normalize(x, dim=-1)
 
     def _recurrent(
         self, phi_Q: torch.Tensor, phi_K: torch.Tensor, V: torch.Tensor, beta: torch.Tensor

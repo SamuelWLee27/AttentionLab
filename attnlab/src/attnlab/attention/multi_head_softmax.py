@@ -5,7 +5,7 @@ from torch import nn
 
 
 class MultiHeadSoftmaxAttention(nn.Module):
-    def __init__(self, d_model: int, heads: int):
+    def __init__(self, d_model: int, heads: int, is_causal: bool = False):
         super().__init__()
         if d_model % heads != 0:
             raise ValueError(
@@ -14,6 +14,7 @@ class MultiHeadSoftmaxAttention(nn.Module):
         self.d_model = d_model
         self.heads = heads
         self.head_dim = d_model // heads
+        self.is_causal = is_causal
         self.q_proj = nn.Linear(d_model, d_model)
         self.k_proj = nn.Linear(d_model, d_model)
         self.v_proj = nn.Linear(d_model, d_model)
@@ -26,6 +27,12 @@ class MultiHeadSoftmaxAttention(nn.Module):
         V = self.v_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
 
         score = Q @ (K.transpose(-2, -1)) / math.sqrt(self.head_dim)
+
+        if self.is_causal:
+            mask = torch.ones(T, T, dtype=torch.bool, device=x.device)
+            causal_mask = torch.triu(mask, diagonal=1)
+            score = score.masked_fill(causal_mask, float("-inf"))
+
         weights = torch.softmax(score, dim=-1)
         out = weights @ V
         concat = out.permute(0, 2, 1, 3).reshape(B, T, self.d_model)

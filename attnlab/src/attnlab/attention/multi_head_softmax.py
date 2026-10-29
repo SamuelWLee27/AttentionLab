@@ -5,7 +5,7 @@ from torch import nn
 
 
 class MultiHeadSoftmaxAttention(nn.Module):
-    def __init__(self, d_model: int, heads: int, is_causal: bool = False):
+    def __init__(self, d_model: int, heads: int, is_causal: bool = True):
         super().__init__()
         if d_model % heads != 0:
             raise ValueError(f"{type(self).__name__}: D {d_model} is not divisible by H {heads}")

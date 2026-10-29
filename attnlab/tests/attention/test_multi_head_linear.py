@@ -15,7 +15,7 @@ def test_linear_attention_shape():
 
 def test_linear_attention_matches_quadratic_form():
     torch.manual_seed(0)
-    layer = MultiHeadLinearAttention(d_model=8, heads=2)
+    layer = MultiHeadLinearAttention(d_model=8, heads=2, is_causal=False)
     x = torch.randn(2, 5, 8)
     B, T, D = x.shape
 

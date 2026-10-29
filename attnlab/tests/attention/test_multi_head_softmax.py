@@ -16,7 +16,7 @@ def test_softmax_attention_shape():
 
 def test_multi_head_softmax_against_pytorch():
     torch.manual_seed(0)
-    layer = MultiHeadSoftmaxAttention(d_model=8, heads=2)
+    layer = MultiHeadSoftmaxAttention(d_model=8, heads=2, is_causal=False)
     x = torch.randn(2, 5, 8)
     B, T, D = x.shape
 

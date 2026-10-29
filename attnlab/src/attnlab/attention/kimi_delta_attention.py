@@ -1,22 +1,28 @@
+import math
+
 import torch
 from torch import nn
 
 
 class KimiDeltaAttention(nn.Module):
-    def __init__(self, d_model: int, heads: int):
+    def __init__(self, d_model: int, heads: int, is_causal: bool = True):
         super().__init__()
         if d_model % heads != 0:
             raise ValueError(f"{type(self).__name__}: D {d_model} is not divisible by H {heads}")
+
+        if not is_causal:
+            raise NotImplementedError(f"{type(self).__name__} only supports causal attention")
         self.heads = heads
         self.head_dim = d_model // heads
         self.q_proj = nn.Linear(d_model, d_model)
         self.k_proj = nn.Linear(d_model, d_model)
         self.v_proj = nn.Linear(d_model, d_model)
         self.beta_proj = nn.Linear(d_model, heads)
-        self.alpha_proj = nn.Linear(d_model, heads)
+        self.alpha_proj = nn.Linear(d_model, d_model)
         self.out_proj = nn.Linear(d_model, d_model)
         self.silu = nn.SiLU()
-        self.dt_bias = nn.Parameter(torch.zeros(heads))
+        dt = torch.exp(torch.empty(heads, self.head_dim).uniform_(math.log(0.001), math.log(0.1)))
+        self.dt_bias = nn.Parameter(dt + torch.log(-torch.expm1(-dt)))
         A = torch.empty(heads).uniform_(1, 16)
         self.A_log = nn.Parameter(A.log())
 

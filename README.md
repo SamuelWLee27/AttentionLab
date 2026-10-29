@@ -11,7 +11,7 @@ This is a learning project: each layer is written from scratch, starting with si
 | Multi-head softmax attention (optional causal mask) | [Vaswani et al., 2017](https://arxiv.org/abs/1706.03762) | Tested |
 | Linear attention | [Katharopoulos et al., 2020](https://arxiv.org/abs/2006.16236) | Tested |
 | DeltaNet | [Schlag et al., 2021](https://arxiv.org/abs/2102.11174); [Yang et al., 2024](https://arxiv.org/abs/2406.06484) | Tested |
-| Gated DeltaNet | [Yang et al., 2024](https://arxiv.org/abs/2412.06464) | Planned |
+| Gated DeltaNet | [Yang et al., 2024](https://arxiv.org/abs/2412.06464) | Tested |
 | Kimi Delta Attention (KDA) | [Kimi Team, 2025](https://arxiv.org/abs/2510.26692) | Planned |
 
 Each layer in the chain adds one idea to the previous one, so each can be tested against its predecessor and benchmarked to show what that idea contributes.

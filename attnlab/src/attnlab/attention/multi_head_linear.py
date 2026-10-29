@@ -53,10 +53,9 @@ class MultiHeadLinearAttention(nn.Module):
 
         for t in range(T):
             K_t = phi_K[:, :, t, :]
-            unsqueezed_key = K_t.unsqueeze(-1)
             V_t = V[:, :, t, :].unsqueeze(-2)
             Q_t = phi_Q[:, :, t, :].unsqueeze(-2)
-            memory = memory + (unsqueezed_key @ V_t)
+            memory = memory + (K_t.unsqueeze(-1) @ V_t)
             K_sum = K_sum + K_t
             output_t = (Q_t @ memory) / (Q_t @ K_sum.unsqueeze(-1))
             outputs.append(output_t)

@@ -8,10 +8,7 @@ class MultiHeadSoftmaxAttention(nn.Module):
     def __init__(self, d_model: int, heads: int, is_causal: bool = False):
         super().__init__()
         if d_model % heads != 0:
-            raise ValueError(
-                f"MultiHeadSoftmaxAttention: D {d_model} is not divisible by H {heads}"
-            )
-        self.d_model = d_model
+            raise ValueError(f"{type(self).__name__}: D {d_model} is not divisible by H {heads}")
         self.heads = heads
         self.head_dim = d_model // heads
         self.is_causal = is_causal
@@ -21,7 +18,7 @@ class MultiHeadSoftmaxAttention(nn.Module):
         self.out_proj = nn.Linear(d_model, d_model)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, T, _ = x.shape
+        B, T, D = x.shape
         Q = self.q_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
         K = self.k_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
         V = self.v_proj(x).view(B, T, self.heads, self.head_dim).permute(0, 2, 1, 3)
@@ -35,5 +32,5 @@ class MultiHeadSoftmaxAttention(nn.Module):
 
         weights = torch.softmax(score, dim=-1)
         out = weights @ V
-        concat = out.permute(0, 2, 1, 3).reshape(B, T, self.d_model)
+        concat = out.permute(0, 2, 1, 3).reshape(B, T, D)
         return self.out_proj(concat)

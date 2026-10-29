@@ -21,7 +21,7 @@ def test_gated_one_alpha_delta_rule_overwrites_same_key():
     key = torch.tensor([1.0, 0.0])
     phi_K = torch.stack([key, key]).view(1, 1, 2, 2)  # same key twice
     phi_Q = phi_K.clone()  # read with the key
-    V = torch.tensor([[3.0, 3.0], [7.0, 7.0]]).view(1, 1, 2, 2)  # Monday, then Friday
+    V = torch.tensor([[3.0, 3.0], [7.0, 7.0]]).view(1, 1, 2, 2)
     beta = torch.ones(1, 1, 2)  # full overwrite
     alpha = torch.ones(1, 1, 2)
 

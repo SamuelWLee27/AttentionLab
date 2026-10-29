@@ -1,0 +1,62 @@
+import torch
+
+from attnlab.attention.gated_delta_net import GatedDeltaNetAttention
+from attnlab.attention.kimi_delta_attention import KimiDeltaAttention
+
+
+def test_kda_attention_shape():
+    torch.manual_seed(0)
+    layer = KimiDeltaAttention(d_model=12, heads=3)
+    x = torch.randn(2, 5, 12)
+
+    assert layer(x).shape == x.shape
+
+
+def test_kda_reduces_to_gated_delta_net_with_shared_channel_decay():
+    torch.manual_seed(0)
+    B, H, T, head_dim = 2, 3, 5, 4
+    layer = KimiDeltaAttention(d_model=H * head_dim, heads=H)
+    reference = GatedDeltaNetAttention(d_model=H * head_dim, heads=H)
+
+    phi_Q = torch.nn.functional.normalize(torch.randn(B, H, T, head_dim), dim=-1)
+    phi_K = torch.nn.functional.normalize(torch.randn(B, H, T, head_dim), dim=-1)
+    V = torch.randn(B, H, T, head_dim)
+    beta = torch.sigmoid(torch.randn(B, H, T))
+
+    # One decay per head and token, copied across all channels.
+    alpha_per_head = torch.sigmoid(torch.randn(B, H, T))
+    alpha_per_channel = alpha_per_head.unsqueeze(-1).expand(B, H, T, head_dim)
+
+    out = layer._recurrent(phi_Q=phi_Q, phi_K=phi_K, V=V, beta=beta, alpha=alpha_per_channel)
+    expected = reference._recurrent(phi_Q=phi_Q, phi_K=phi_K, V=V, beta=beta, alpha=alpha_per_head)
+
+    torch.testing.assert_close(out, expected)
+
+
+def test_kda_decays_channels_independently():
+    layer = KimiDeltaAttention(d_model=2, heads=1)
+
+    key_a = torch.tensor([1.0, 0.0])  # writes into memory row 0
+    key_b = torch.tensor([0.0, 1.0])  # writes into memory row 1
+
+    # Token 0 stores [4, 4] under key_a; token 1 stores [6, 6] under key_b.
+    # Tokens 2 and 3 write nothing (beta = 0) and only read.
+    phi_K = torch.stack([key_a, key_b, key_a, key_a]).view(1, 1, 4, 2)
+    phi_Q = torch.stack([key_a, key_a, key_a, key_b]).view(1, 1, 4, 2)
+    V = torch.tensor([[4.0, 4.0], [6.0, 6.0], [0.0, 0.0], [0.0, 0.0]]).view(1, 1, 4, 2)
+    beta = torch.tensor([1.0, 1.0, 0.0, 0.0]).view(1, 1, 4)
+
+    # At token 2, channel 0 halves while channel 1 is untouched.
+    alpha = torch.tensor([[1.0, 1.0], [1.0, 1.0], [0.5, 1.0], [1.0, 1.0]]).view(1, 1, 4, 2)
+
+    out = layer._recurrent(phi_Q=phi_Q, phi_K=phi_K, V=V, beta=beta, alpha=alpha)
+
+    expected = torch.tensor(
+        [
+            [4.0, 4.0],  # token 0 reads key_a
+            [4.0, 4.0],  # token 1 reads key_a: unchanged by the key_b write
+            [2.0, 2.0],  # token 2 reads key_a: channel 0 decayed by 0.5
+            [6.0, 6.0],  # token 3 reads key_b: channel 1 kept its value
+        ]
+    ).view(1, 1, 4, 2)
+    torch.testing.assert_close(out, expected)
